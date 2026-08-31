@@ -24,6 +24,13 @@
             <p id="health-check-result" role="status" aria-live="polite"></p>
         </section>
 
+        <section aria-label="サーバーの匿名練習報告の初期化">
+            <h2>サーバーの匿名練習報告を初期化する</h2>
+            <p>この操作はdatabase.sqlite内の匿名練習報告だけを削除します。</p>
+            <button type="button" id="server-reports-reset-button">サーバーの匿名練習報告を初期化する</button>
+            <p id="server-reports-reset-result" role="status" aria-live="polite"></p>
+        </section>
+
         <p>
             「要確認」は確認を助けるための匿名練習用の目印です。緊急性を自動判定する機能ではありません。
         </p>
@@ -103,6 +110,8 @@
     <script>
         const healthCheckButton = document.getElementById('health-check-button');
         const healthCheckResult = document.getElementById('health-check-result');
+        const serverReportsResetButton = document.getElementById('server-reports-reset-button');
+        const serverReportsResetResult = document.getElementById('server-reports-reset-result');
 
         healthCheckButton.addEventListener('click', async () => {
             healthCheckButton.disabled = true;
@@ -126,6 +135,45 @@
                 healthCheckResult.textContent = 'サーバーに接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
             } finally {
                 healthCheckButton.disabled = false;
+            }
+        });
+
+        serverReportsResetButton.addEventListener('click', async () => {
+            const isConfirmed = window.confirm('サーバーに保存されている匿名練習報告をすべて初期化します。実在の個人情報は扱いませんが、元に戻せません。続けますか？');
+
+            if (! isConfirmed) {
+                return;
+            }
+
+            let willReload = false;
+            serverReportsResetButton.disabled = true;
+            serverReportsResetResult.textContent = '匿名練習報告を初期化しています。';
+
+            try {
+                const response = await fetch('/api/reports', {
+                    method: 'DELETE',
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (! response.ok) {
+                    throw new Error('初期化に失敗しました。');
+                }
+
+                const data = await response.json();
+                serverReportsResetResult.textContent = `匿名練習報告を${data.deletedCount}件初期化しました。一覧を読み直します。`;
+                willReload = true;
+
+                window.setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } catch (error) {
+                serverReportsResetResult.textContent = 'サーバーに接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+            } finally {
+                if (! willReload) {
+                    serverReportsResetButton.disabled = false;
+                }
             }
         });
     </script>
