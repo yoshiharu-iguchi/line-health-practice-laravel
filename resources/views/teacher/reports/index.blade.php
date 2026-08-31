@@ -18,6 +18,12 @@
             <a href="{{ route('practice-reports.create') }}">学生用フォームへ戻る</a>
         </p>
 
+        <section aria-label="サーバーの状態確認">
+            <h2>サーバーの状態確認</h2>
+            <button type="button" id="health-check-button">サーバーの状態を確認する</button>
+            <p id="health-check-result" role="status" aria-live="polite"></p>
+        </section>
+
         <p>
             「要確認」は確認を助けるための匿名練習用の目印です。緊急性を自動判定する機能ではありません。
         </p>
@@ -93,5 +99,35 @@
             </table>
         @endif
     </main>
+
+    <script>
+        const healthCheckButton = document.getElementById('health-check-button');
+        const healthCheckResult = document.getElementById('health-check-result');
+
+        healthCheckButton.addEventListener('click', async () => {
+            healthCheckButton.disabled = true;
+            healthCheckResult.textContent = 'サーバーを確認しています。';
+
+            try {
+                const response = await fetch('/api/health');
+
+                if (! response.ok) {
+                    throw new Error('ヘルスチェックに失敗しました。');
+                }
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    healthCheckResult.textContent = 'サーバーは動いています。';
+                } else {
+                    throw new Error('想定と違う返事です。');
+                }
+            } catch (error) {
+                healthCheckResult.textContent = 'サーバーに接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+            } finally {
+                healthCheckButton.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>

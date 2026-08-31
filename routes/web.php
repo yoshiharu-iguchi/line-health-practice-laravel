@@ -25,3 +25,8 @@ Route::get('/teacher/reports', [PracticeReportController::class, 'index'])
 // 指定した匿名練習報告の対応状態だけを更新します。
 Route::patch('/teacher/reports/{report}/status', [PracticeReportController::class, 'updateStatus'])
     ->name('teacher.reports.update-status');
+
+// サーバーが返事をできるかだけを確認する、データを含まないヘルスチェックです。
+Route::get('/api/health', function () {
+    return response()->json(['status' => 'ok']);
+});
