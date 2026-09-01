@@ -83,14 +83,6 @@
                                         <button type="submit">対応済みにする</button>
                                     </form>
 
-                                    <button
-                                        type="button"
-                                        data-api-status-button
-                                        data-report-id="{{ $report->id }}"
-                                    >
-                                        APIで対応済みにする
-                                    </button>
-                                    <p id="api-status-result-{{ $report->id }}" role="status" aria-live="polite"></p>
                                 @else
                                     <form method="POST" action="{{ route('teacher.reports.update-status', $report) }}">
                                         @csrf
@@ -99,6 +91,20 @@
                                         <button type="submit">未対応へ戻す</button>
                                     </form>
                                 @endif
+
+                                <button
+                                    type="button"
+                                    data-api-status-button
+                                    data-report-id="{{ $report->id }}"
+                                    data-new-status="{{ $report->status === '未対応' ? '対応済み' : '未対応' }}"
+                                >
+                                    @if ($report->status === '未対応')
+                                        APIで対応済みにする
+                                    @else
+                                        APIで未対応へ戻す
+                                    @endif
+                                </button>
+                                <p id="api-status-result-{{ $report->id }}" role="status" aria-live="polite"></p>
                             </td>
                             <td>{{ $report->status_changed_at?->format('Y年m月d日 H:i') ?? '変更なし' }}</td>
                             <td>{{ $report->created_at?->format('Y年m月d日 H:i') }}</td>
@@ -190,6 +196,7 @@
         apiStatusButtons.forEach((button) => {
             button.addEventListener('click', async () => {
                 const reportId = button.dataset.reportId;
+                const newStatus = button.dataset.newStatus;
                 const result = document.getElementById(`api-status-result-${reportId}`);
                 let willReload = false;
 
@@ -204,7 +211,7 @@
                             'Accept': 'application/json',
                         },
                         body: JSON.stringify({
-                            status: '対応済み',
+                            status: newStatus,
                         }),
                     });
                     const responseData = await response.json();
@@ -215,7 +222,7 @@
                         return;
                     }
 
-                    result.textContent = `APIで報告番号${responseData.id}を対応済みにしました。一覧を読み直します。`;
+                    result.textContent = `APIで報告番号${responseData.id}を${responseData.status}にしました。一覧を読み直します。`;
                     willReload = true;
 
                     window.setTimeout(() => {
