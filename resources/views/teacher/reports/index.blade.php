@@ -82,6 +82,15 @@
                                         <input type="hidden" name="status" value="対応済み">
                                         <button type="submit">対応済みにする</button>
                                     </form>
+
+                                    <button
+                                        type="button"
+                                        data-api-status-button
+                                        data-report-id="{{ $report->id }}"
+                                    >
+                                        APIで対応済みにする
+                                    </button>
+                                    <p id="api-status-result-{{ $report->id }}" role="status" aria-live="polite"></p>
                                 @else
                                     <form method="POST" action="{{ route('teacher.reports.update-status', $report) }}">
                                         @csrf
@@ -112,6 +121,7 @@
         const healthCheckResult = document.getElementById('health-check-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
         const serverReportsResetResult = document.getElementById('server-reports-reset-result');
+        const apiStatusButtons = document.querySelectorAll('[data-api-status-button]');
 
         healthCheckButton.addEventListener('click', async () => {
             healthCheckButton.disabled = true;
@@ -175,6 +185,50 @@
                     serverReportsResetButton.disabled = false;
                 }
             }
+        });
+
+        apiStatusButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const reportId = button.dataset.reportId;
+                const result = document.getElementById(`api-status-result-${reportId}`);
+                let willReload = false;
+
+                button.disabled = true;
+                result.textContent = 'APIで対応状態を変更しています。';
+
+                try {
+                    const response = await fetch(`/api/reports/${reportId}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            status: '対応済み',
+                        }),
+                    });
+                    const responseData = await response.json();
+
+                    if (response.status !== 200) {
+                        result.textContent = responseData.message
+                            ?? 'APIで対応状態を変更できませんでした。';
+                        return;
+                    }
+
+                    result.textContent = `APIで報告番号${responseData.id}を対応済みにしました。一覧を読み直します。`;
+                    willReload = true;
+
+                    window.setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } catch (error) {
+                    result.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+                } finally {
+                    if (! willReload) {
+                        button.disabled = false;
+                    }
+                }
+            });
         });
     </script>
 </body>
