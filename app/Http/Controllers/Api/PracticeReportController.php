@@ -14,9 +14,23 @@ class PracticeReportController extends Controller
     /**
      * ローカルの匿名練習報告を、JSONとして読み取り専用で返します。
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $reports = PracticeReport::query()
+        $status = $request->query('status');
+
+        if ($status !== null && ! in_array($status, ['未対応', '対応済み'], true)) {
+            return response()->json([
+                'message' => 'statusには「未対応」または「対応済み」を指定してください。',
+            ], 422);
+        }
+
+        $query = PracticeReport::query();
+
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+
+        $reports = $query
             ->orderByRaw("CASE status WHEN '未対応' THEN 0 WHEN '対応済み' THEN 1 ELSE 2 END")
             ->orderByDesc('created_at')
             ->get();
