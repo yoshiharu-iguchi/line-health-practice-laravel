@@ -31,6 +31,13 @@
             <p id="api-needs-review-load-result" role="status" aria-live="polite"></p>
         </section>
 
+        <section aria-label="API学習用の集計の読み込み">
+            <h2>API学習用：集計を読み込む</h2>
+            <p>このボタンはAPIから匿名練習報告の集計を読む練習用です。下の集計表示やSQLiteのデータは変更しません。</p>
+            <button type="button" id="api-summary-load-button">APIからの集計を読み込む</button>
+            <p id="api-summary-load-result" role="status" aria-live="polite"></p>
+        </section>
+
         <section aria-label="サーバーの匿名練習報告の初期化">
             <h2>サーバーの匿名練習報告を初期化する</h2>
             <p>この操作はdatabase.sqlite内の匿名練習報告だけを削除します。</p>
@@ -134,6 +141,8 @@
         const healthCheckResult = document.getElementById('health-check-result');
         const apiNeedsReviewLoadButton = document.getElementById('api-needs-review-load-button');
         const apiNeedsReviewLoadResult = document.getElementById('api-needs-review-load-result');
+        const apiSummaryLoadButton = document.getElementById('api-summary-load-button');
+        const apiSummaryLoadResult = document.getElementById('api-summary-load-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
         const serverReportsResetResult = document.getElementById('server-reports-reset-result');
         const apiStatusButtons = document.querySelectorAll('[data-api-status-button]');
@@ -181,6 +190,27 @@
                 apiNeedsReviewLoadResult.textContent = `要確認の匿名練習報告を${reports.length}件読み込みました。`;
             } catch (error) {
                 apiNeedsReviewLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+            }
+        });
+
+        apiSummaryLoadButton.addEventListener('click', async () => {
+            apiSummaryLoadResult.textContent = 'APIから集計を読み込んでいます。';
+
+            try {
+                const response = await fetch('/api/reports/summary', {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (! response.ok) {
+                    throw new Error('集計を読み込めませんでした。');
+                }
+
+                const summary = await response.json();
+                apiSummaryLoadResult.textContent = `API集計：全て${summary.totalReportCount}件、未対応${summary.unhandledReportCount}件、対応済み${summary.handledReportCount}件`;
+            } catch (error) {
+                apiSummaryLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
             }
         });
 
