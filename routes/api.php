@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/reports', [PracticeReportController::class, 'index'])
     ->name('api.practice-reports.index');
 
+// 指定した番号の匿名練習報告を1件だけJSONで返すAPIです。
+Route::get('/reports/{id}', [PracticeReportController::class, 'show'])
+    ->name('api.practice-reports.show');
+
 // ローカルの匿名練習報告だけをJSONで受け取り、SQLiteへ保存するAPIです。
 Route::post('/reports', [PracticeReportController::class, 'store'])
     ->name('api.practice-reports.store');

@@ -25,6 +25,22 @@ class PracticeReportController extends Controller
     }
 
     /**
+     * 指定した番号の匿名練習報告を、JSONで1件だけ返します。
+     */
+    public function show(int $id): JsonResponse
+    {
+        $report = PracticeReport::find($id);
+
+        if ($report === null) {
+            return response()->json([
+                'message' => '指定した匿名練習報告が見つかりません。',
+            ], 404);
+        }
+
+        return response()->json((new PracticeReportResource($report))->resolve());
+    }
+
+    /**
      * 匿名練習報告のJSONを確認し、正しい選択肢だけをSQLiteへ保存します。
      */
     public function store(Request $request): JsonResponse
