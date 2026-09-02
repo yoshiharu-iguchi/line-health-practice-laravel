@@ -54,6 +54,22 @@ class PracticeReportController extends Controller
     }
 
     /**
+     * ローカルの匿名練習報告の件数を、JSONとして読み取り専用で返します。
+     */
+    public function summary(): JsonResponse
+    {
+        return response()->json([
+            'totalReportCount' => PracticeReport::query()->count(),
+            'unhandledReportCount' => PracticeReport::query()
+                ->where('status', '未対応')
+                ->count(),
+            'handledReportCount' => PracticeReport::query()
+                ->where('status', '対応済み')
+                ->count(),
+        ]);
+    }
+
+    /**
      * 指定した番号の匿名練習報告を、JSONで1件だけ返します。
      */
     public function show(int $id): JsonResponse
