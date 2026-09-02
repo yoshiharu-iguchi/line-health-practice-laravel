@@ -17,6 +17,7 @@ class PracticeReportController extends Controller
     public function index(Request $request): JsonResponse
     {
         $status = $request->query('status');
+        $filter = $request->query('filter');
 
         if ($status !== null && ! in_array($status, ['未対応', '対応済み'], true)) {
             return response()->json([
@@ -24,10 +25,24 @@ class PracticeReportController extends Controller
             ], 422);
         }
 
+        if ($filter !== null && $filter !== 'needs-review') {
+            return response()->json([
+                'message' => 'filterには「needs-review」を指定してください。',
+            ], 422);
+        }
+
         $query = PracticeReport::query();
 
         if ($status !== null) {
             $query->where('status', $status);
+        }
+
+        if ($filter === 'needs-review') {
+            $query->where(function ($needsReviewQuery) {
+                $needsReviewQuery
+                    ->where('condition', '不良')
+                    ->orWhere('contact_request', '希望する');
+            });
         }
 
         $reports = $query

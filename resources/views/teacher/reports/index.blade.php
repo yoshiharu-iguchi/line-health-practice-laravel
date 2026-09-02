@@ -24,6 +24,13 @@
             <p id="health-check-result" role="status" aria-live="polite"></p>
         </section>
 
+        <section aria-label="API学習用の要確認報告の読み込み">
+            <h2>API学習用：要確認の報告を読み込む</h2>
+            <p>このボタンはAPIから要確認の匿名練習報告の件数を読む練習用です。下の一覧やSQLiteのデータは変更しません。</p>
+            <button type="button" id="api-needs-review-load-button">要確認の報告をAPIから読み込む</button>
+            <p id="api-needs-review-load-result" role="status" aria-live="polite"></p>
+        </section>
+
         <section aria-label="サーバーの匿名練習報告の初期化">
             <h2>サーバーの匿名練習報告を初期化する</h2>
             <p>この操作はdatabase.sqlite内の匿名練習報告だけを削除します。</p>
@@ -125,6 +132,8 @@
     <script>
         const healthCheckButton = document.getElementById('health-check-button');
         const healthCheckResult = document.getElementById('health-check-result');
+        const apiNeedsReviewLoadButton = document.getElementById('api-needs-review-load-button');
+        const apiNeedsReviewLoadResult = document.getElementById('api-needs-review-load-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
         const serverReportsResetResult = document.getElementById('server-reports-reset-result');
         const apiStatusButtons = document.querySelectorAll('[data-api-status-button]');
@@ -151,6 +160,27 @@
                 healthCheckResult.textContent = 'サーバーに接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
             } finally {
                 healthCheckButton.disabled = false;
+            }
+        });
+
+        apiNeedsReviewLoadButton.addEventListener('click', async () => {
+            apiNeedsReviewLoadResult.textContent = 'APIから要確認の匿名練習報告を読み込んでいます。';
+
+            try {
+                const response = await fetch('/api/reports?filter=needs-review', {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (! response.ok) {
+                    throw new Error('要確認の報告を読み込めませんでした。');
+                }
+
+                const reports = await response.json();
+                apiNeedsReviewLoadResult.textContent = `要確認の匿名練習報告を${reports.length}件読み込みました。`;
+            } catch (error) {
+                apiNeedsReviewLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
             }
         });
 
