@@ -194,6 +194,7 @@
         });
 
         apiSummaryLoadButton.addEventListener('click', async () => {
+            apiSummaryLoadButton.disabled = true;
             apiSummaryLoadResult.textContent = 'APIから集計を読み込んでいます。';
 
             try {
@@ -211,6 +212,8 @@
                 apiSummaryLoadResult.textContent = `API集計：全て${summary.totalReportCount}件、未対応${summary.unhandledReportCount}件、対応済み${summary.handledReportCount}件`;
             } catch (error) {
                 apiSummaryLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+            } finally {
+                apiSummaryLoadButton.disabled = false;
             }
         });
 
