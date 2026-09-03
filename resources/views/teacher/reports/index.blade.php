@@ -29,6 +29,7 @@
             <p>このボタンはAPIから要確認の匿名練習報告の件数を読む練習用です。下の一覧やSQLiteのデータは変更しません。</p>
             <button type="button" id="api-needs-review-load-button">要確認の報告をAPIから読み込む</button>
             <p id="api-needs-review-load-result" role="status" aria-live="polite"></p>
+            <ul id="api-needs-review-list" aria-label="APIから読み込んだ要確認の匿名練習報告"></ul>
         </section>
 
         <section aria-label="API学習用の集計の読み込み">
@@ -141,6 +142,7 @@
         const healthCheckResult = document.getElementById('health-check-result');
         const apiNeedsReviewLoadButton = document.getElementById('api-needs-review-load-button');
         const apiNeedsReviewLoadResult = document.getElementById('api-needs-review-load-result');
+        const apiNeedsReviewList = document.getElementById('api-needs-review-list');
         const apiSummaryLoadButton = document.getElementById('api-summary-load-button');
         const apiSummaryLoadResult = document.getElementById('api-summary-load-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
@@ -174,6 +176,7 @@
 
         apiNeedsReviewLoadButton.addEventListener('click', async () => {
             apiNeedsReviewLoadResult.textContent = 'APIから要確認の匿名練習報告を読み込んでいます。';
+            apiNeedsReviewList.textContent = '';
 
             try {
                 const response = await fetch('/api/reports?filter=needs-review', {
@@ -188,6 +191,19 @@
 
                 const reports = await response.json();
                 apiNeedsReviewLoadResult.textContent = `要確認の匿名練習報告を${reports.length}件読み込みました。`;
+
+                if (reports.length === 0) {
+                    const emptyItem = document.createElement('li');
+                    emptyItem.textContent = '要確認の匿名練習報告はありません。';
+                    apiNeedsReviewList.appendChild(emptyItem);
+                    return;
+                }
+
+                reports.forEach((report) => {
+                    const reportItem = document.createElement('li');
+                    reportItem.textContent = `報告番号：${report.id}、体調：${report.condition}、対応状態：${report.status}`;
+                    apiNeedsReviewList.appendChild(reportItem);
+                });
             } catch (error) {
                 apiNeedsReviewLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
             }
