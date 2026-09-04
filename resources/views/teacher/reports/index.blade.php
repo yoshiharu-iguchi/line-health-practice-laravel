@@ -24,12 +24,17 @@
             <p id="health-check-result" role="status" aria-live="polite"></p>
         </section>
 
-        <section aria-label="API学習用の要確認報告の読み込み">
-            <h2>API学習用：要確認の報告を読み込む</h2>
-            <p>このボタンはAPIから要確認の匿名練習報告の件数を読む練習用です。下の一覧やSQLiteのデータは変更しません。</p>
-            <button type="button" id="api-needs-review-load-button">要確認の報告をAPIから読み込む</button>
-            <p id="api-needs-review-load-result" role="status" aria-live="polite"></p>
-            <ul id="api-needs-review-list" aria-label="APIから読み込んだ要確認の匿名練習報告"></ul>
+        <section aria-label="API学習用の匿名練習報告の読み込み">
+            <h2>API学習用：匿名練習報告を読み込む</h2>
+            <p>ボタンごとに違うAPI URLを読み、匿名練習報告を小さな一覧で表示する練習用です。下の一覧やSQLiteのデータは変更しません。</p>
+            <div role="group" aria-label="API学習用の匿名練習報告の絞り込み">
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports" data-filter-label="全て">全て</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports?status=未対応" data-filter-label="未対応">未対応</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports?status=対応済み" data-filter-label="対応済み">対応済み</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports?filter=needs-review" data-filter-label="要確認">要確認</button>
+            </div>
+            <p id="api-report-load-result" role="status" aria-live="polite"></p>
+            <ul id="api-report-list" aria-label="APIから読み込んだ匿名練習報告"></ul>
         </section>
 
         <section aria-label="API学習用の集計の読み込み">
@@ -140,9 +145,9 @@
     <script>
         const healthCheckButton = document.getElementById('health-check-button');
         const healthCheckResult = document.getElementById('health-check-result');
-        const apiNeedsReviewLoadButton = document.getElementById('api-needs-review-load-button');
-        const apiNeedsReviewLoadResult = document.getElementById('api-needs-review-load-result');
-        const apiNeedsReviewList = document.getElementById('api-needs-review-list');
+        const apiReportFilterButtons = document.querySelectorAll('[data-api-report-filter-button]');
+        const apiReportLoadResult = document.getElementById('api-report-load-result');
+        const apiReportList = document.getElementById('api-report-list');
         const apiSummaryLoadButton = document.getElementById('api-summary-load-button');
         const apiSummaryLoadResult = document.getElementById('api-summary-load-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
@@ -174,39 +179,45 @@
             }
         });
 
-        apiNeedsReviewLoadButton.addEventListener('click', async () => {
-            apiNeedsReviewLoadResult.textContent = 'APIから要確認の匿名練習報告を読み込んでいます。';
-            apiNeedsReviewList.textContent = '';
+        async function loadApiReports(apiUrl, filterLabel) {
+            apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を読み込んでいます。`;
+            apiReportList.textContent = '';
 
             try {
-                const response = await fetch('/api/reports?filter=needs-review', {
+                const response = await fetch(apiUrl, {
                     headers: {
                         Accept: 'application/json',
                     },
                 });
 
                 if (! response.ok) {
-                    throw new Error('要確認の報告を読み込めませんでした。');
+                    throw new Error('匿名練習報告を読み込めませんでした。');
                 }
 
                 const reports = await response.json();
-                apiNeedsReviewLoadResult.textContent = `要確認の匿名練習報告を${reports.length}件読み込みました。`;
+                apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を${reports.length}件読み込みました。`;
 
                 if (reports.length === 0) {
                     const emptyItem = document.createElement('li');
-                    emptyItem.textContent = '要確認の匿名練習報告はありません。';
-                    apiNeedsReviewList.appendChild(emptyItem);
+                    emptyItem.textContent = `${filterLabel}の匿名練習報告はありません。`;
+                    apiReportList.appendChild(emptyItem);
                     return;
                 }
 
                 reports.forEach((report) => {
                     const reportItem = document.createElement('li');
                     reportItem.textContent = `報告番号：${report.id}、体調：${report.condition}、対応状態：${report.status}`;
-                    apiNeedsReviewList.appendChild(reportItem);
+                    apiReportList.appendChild(reportItem);
                 });
             } catch (error) {
-                apiNeedsReviewLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+                apiReportLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
             }
+        }
+
+        apiReportFilterButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                loadApiReports(button.dataset.apiUrl, button.dataset.filterLabel);
+            });
         });
 
         apiSummaryLoadButton.addEventListener('click', async () => {
