@@ -48,9 +48,10 @@ class PracticeReportController extends Controller
         $reports = $query
             ->orderByRaw("CASE status WHEN '未対応' THEN 0 WHEN '対応済み' THEN 1 ELSE 2 END")
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(5)
+            ->withQueryString();
 
-        return response()->json(PracticeReportResource::collection($reports)->resolve());
+        return PracticeReportResource::collection($reports)->response();
     }
 
     /**

@@ -194,8 +194,10 @@
                     throw new Error('匿名練習報告を読み込めませんでした。');
                 }
 
-                const reports = await response.json();
-                apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を${reports.length}件読み込みました。`;
+                const responseData = await response.json();
+                const reports = responseData.data;
+                const meta = responseData.meta;
+                apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を${reports.length}件読み込みました。${meta.current_page}/${meta.last_page}ページ（全${meta.total}件）です。`;
 
                 if (reports.length === 0) {
                     const emptyItem = document.createElement('li');
