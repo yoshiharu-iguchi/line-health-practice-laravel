@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員用・匿名練習報告一覧</title>
+    <style>
+        [data-api-report-filter-button][aria-pressed="true"] {
+            background-color: #1d4ed8;
+            border: 2px solid #1e3a8a;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        [data-api-report-filter-button]:focus-visible {
+            outline: 3px solid #f59e0b;
+            outline-offset: 2px;
+        }
+    </style>
 </head>
 <body>
     <main>
@@ -28,13 +41,14 @@
             <h2>API学習用：匿名練習報告を読み込む</h2>
             <p>ボタンごとに違うAPI URLを読み、匿名練習報告を小さな一覧で表示する練習用です。下の一覧やSQLiteのデータは変更しません。</p>
             <div role="group" aria-label="API学習用の匿名練習報告の絞り込み">
-                <button type="button" data-api-report-filter-button data-api-url="/api/reports" data-filter-label="全て">全て</button>
-                <button type="button" data-api-report-filter-button data-api-url="/api/reports?status=未対応" data-filter-label="未対応">未対応</button>
-                <button type="button" data-api-report-filter-button data-api-url="/api/reports?status=対応済み" data-filter-label="対応済み">対応済み</button>
-                <button type="button" data-api-report-filter-button data-api-url="/api/reports?filter=needs-review" data-filter-label="要確認">要確認</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports" data-filter-label="全て" aria-pressed="false">全て</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports?status=未対応" data-filter-label="未対応" aria-pressed="false">未対応</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports?status=対応済み" data-filter-label="対応済み" aria-pressed="false">対応済み</button>
+                <button type="button" data-api-report-filter-button data-api-url="/api/reports?filter=needs-review" data-filter-label="要確認" aria-pressed="false">要確認</button>
             </div>
             <p id="api-report-load-result" role="status" aria-live="polite"></p>
-            <ul id="api-report-list" aria-label="APIから読み込んだ匿名練習報告"></ul>
+            <p id="api-report-page-information" aria-live="polite">API学習用一覧：まだ読み込んでいません。</p>
+            <ul id="api-report-list" aria-label="APIから読み込んだ匿名練習報告" aria-busy="false"></ul>
             <div role="group" aria-label="API学習用の匿名練習報告のページ移動">
                 <button type="button" id="api-report-previous-page-button" disabled>前へ</button>
                 <button type="button" id="api-report-next-page-button" disabled>次へ</button>
@@ -151,6 +165,7 @@
         const healthCheckResult = document.getElementById('health-check-result');
         const apiReportFilterButtons = document.querySelectorAll('[data-api-report-filter-button]');
         const apiReportLoadResult = document.getElementById('api-report-load-result');
+        const apiReportPageInformation = document.getElementById('api-report-page-information');
         const apiReportList = document.getElementById('api-report-list');
         const apiReportPreviousPageButton = document.getElementById('api-report-previous-page-button');
         const apiReportNextPageButton = document.getElementById('api-report-next-page-button');
@@ -160,6 +175,18 @@
         const serverReportsResetResult = document.getElementById('server-reports-reset-result');
         const apiStatusButtons = document.querySelectorAll('[data-api-status-button]');
         let currentApiReportFilterLabel = '全て';
+
+        function setApiReportFilterButtonsDisabled(disabled) {
+            apiReportFilterButtons.forEach((button) => {
+                button.disabled = disabled;
+            });
+        }
+
+        function setCurrentApiReportFilterButton(selectedButton) {
+            apiReportFilterButtons.forEach((button) => {
+                button.setAttribute('aria-pressed', button === selectedButton ? 'true' : 'false');
+            });
+        }
 
         healthCheckButton.addEventListener('click', async () => {
             healthCheckButton.disabled = true;
@@ -190,6 +217,8 @@
             currentApiReportFilterLabel = filterLabel;
             apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を読み込んでいます。`;
             apiReportList.textContent = '';
+            apiReportList.setAttribute('aria-busy', 'true');
+            setApiReportFilterButtonsDisabled(true);
             apiReportPreviousPageButton.disabled = true;
             apiReportNextPageButton.disabled = true;
 
@@ -208,6 +237,7 @@
                 const reports = responseData.data;
                 const meta = responseData.meta;
                 apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を${reports.length}件読み込みました。${meta.current_page}/${meta.last_page}ページ（全${meta.total}件）です。`;
+                apiReportPageInformation.textContent = `API学習用一覧：${meta.current_page} / ${meta.last_page} ページ目（全${meta.total}件のうち${meta.from ?? 0}〜${meta.to ?? 0}件目）`;
                 apiReportPreviousPageButton.dataset.apiUrl = responseData.links.prev ?? '';
                 apiReportNextPageButton.dataset.apiUrl = responseData.links.next ?? '';
                 apiReportPreviousPageButton.disabled = responseData.links.prev === null;
@@ -227,11 +257,16 @@
                 });
             } catch (error) {
                 apiReportLoadResult.textContent = 'APIへ接続できません。http://localhost:8000/ を開き、php artisan serveでLaravelサーバーが起動しているか確認してください。';
+                apiReportPageInformation.textContent = 'API学習用一覧：ページ情報を読み込めませんでした。';
+            } finally {
+                apiReportList.setAttribute('aria-busy', 'false');
+                setApiReportFilterButtonsDisabled(false);
             }
         }
 
         apiReportFilterButtons.forEach((button) => {
             button.addEventListener('click', () => {
+                setCurrentApiReportFilterButton(button);
                 loadApiReports(button.dataset.apiUrl, button.dataset.filterLabel);
             });
         });
