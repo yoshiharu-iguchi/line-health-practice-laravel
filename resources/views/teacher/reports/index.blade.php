@@ -50,8 +50,10 @@
             <p id="api-report-page-information" aria-live="polite">API学習用一覧：まだ読み込んでいません。</p>
             <ul id="api-report-list" aria-label="APIから読み込んだ匿名練習報告" aria-busy="false"></ul>
             <div role="group" aria-label="API学習用の匿名練習報告のページ移動">
+                <button type="button" id="api-report-first-page-button" disabled>最初へ</button>
                 <button type="button" id="api-report-previous-page-button" disabled>前へ</button>
                 <button type="button" id="api-report-next-page-button" disabled>次へ</button>
+                <button type="button" id="api-report-last-page-button" disabled>最後へ</button>
             </div>
         </section>
 
@@ -167,8 +169,10 @@
         const apiReportLoadResult = document.getElementById('api-report-load-result');
         const apiReportPageInformation = document.getElementById('api-report-page-information');
         const apiReportList = document.getElementById('api-report-list');
+        const apiReportFirstPageButton = document.getElementById('api-report-first-page-button');
         const apiReportPreviousPageButton = document.getElementById('api-report-previous-page-button');
         const apiReportNextPageButton = document.getElementById('api-report-next-page-button');
+        const apiReportLastPageButton = document.getElementById('api-report-last-page-button');
         const apiSummaryLoadButton = document.getElementById('api-summary-load-button');
         const apiSummaryLoadResult = document.getElementById('api-summary-load-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
@@ -219,8 +223,10 @@
             apiReportList.textContent = '';
             apiReportList.setAttribute('aria-busy', 'true');
             setApiReportFilterButtonsDisabled(true);
+            apiReportFirstPageButton.disabled = true;
             apiReportPreviousPageButton.disabled = true;
             apiReportNextPageButton.disabled = true;
+            apiReportLastPageButton.disabled = true;
 
             try {
                 const response = await fetch(apiUrl, {
@@ -238,10 +244,14 @@
                 const meta = responseData.meta;
                 apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を${reports.length}件読み込みました。${meta.current_page}/${meta.last_page}ページ（全${meta.total}件）です。`;
                 apiReportPageInformation.textContent = `API学習用一覧：${meta.current_page} / ${meta.last_page} ページ目（全${meta.total}件のうち${meta.from ?? 0}〜${meta.to ?? 0}件目）`;
+                apiReportFirstPageButton.dataset.apiUrl = responseData.links.first ?? '';
                 apiReportPreviousPageButton.dataset.apiUrl = responseData.links.prev ?? '';
                 apiReportNextPageButton.dataset.apiUrl = responseData.links.next ?? '';
+                apiReportLastPageButton.dataset.apiUrl = responseData.links.last ?? '';
+                apiReportFirstPageButton.disabled = meta.current_page === 1;
                 apiReportPreviousPageButton.disabled = responseData.links.prev === null;
                 apiReportNextPageButton.disabled = responseData.links.next === null;
+                apiReportLastPageButton.disabled = meta.current_page === meta.last_page;
 
                 if (reports.length === 0) {
                     const emptyItem = document.createElement('li');
@@ -271,12 +281,20 @@
             });
         });
 
+        apiReportFirstPageButton.addEventListener('click', () => {
+            loadApiReports(apiReportFirstPageButton.dataset.apiUrl, currentApiReportFilterLabel);
+        });
+
         apiReportPreviousPageButton.addEventListener('click', () => {
             loadApiReports(apiReportPreviousPageButton.dataset.apiUrl, currentApiReportFilterLabel);
         });
 
         apiReportNextPageButton.addEventListener('click', () => {
             loadApiReports(apiReportNextPageButton.dataset.apiUrl, currentApiReportFilterLabel);
+        });
+
+        apiReportLastPageButton.addEventListener('click', () => {
+            loadApiReports(apiReportLastPageButton.dataset.apiUrl, currentApiReportFilterLabel);
         });
 
         apiSummaryLoadButton.addEventListener('click', async () => {
