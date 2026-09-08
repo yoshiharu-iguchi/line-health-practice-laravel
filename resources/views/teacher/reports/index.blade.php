@@ -35,6 +35,10 @@
             </div>
             <p id="api-report-load-result" role="status" aria-live="polite"></p>
             <ul id="api-report-list" aria-label="APIから読み込んだ匿名練習報告"></ul>
+            <div role="group" aria-label="API学習用の匿名練習報告のページ移動">
+                <button type="button" id="api-report-previous-page-button" disabled>前へ</button>
+                <button type="button" id="api-report-next-page-button" disabled>次へ</button>
+            </div>
         </section>
 
         <section aria-label="API学習用の集計の読み込み">
@@ -148,11 +152,14 @@
         const apiReportFilterButtons = document.querySelectorAll('[data-api-report-filter-button]');
         const apiReportLoadResult = document.getElementById('api-report-load-result');
         const apiReportList = document.getElementById('api-report-list');
+        const apiReportPreviousPageButton = document.getElementById('api-report-previous-page-button');
+        const apiReportNextPageButton = document.getElementById('api-report-next-page-button');
         const apiSummaryLoadButton = document.getElementById('api-summary-load-button');
         const apiSummaryLoadResult = document.getElementById('api-summary-load-result');
         const serverReportsResetButton = document.getElementById('server-reports-reset-button');
         const serverReportsResetResult = document.getElementById('server-reports-reset-result');
         const apiStatusButtons = document.querySelectorAll('[data-api-status-button]');
+        let currentApiReportFilterLabel = '全て';
 
         healthCheckButton.addEventListener('click', async () => {
             healthCheckButton.disabled = true;
@@ -180,8 +187,11 @@
         });
 
         async function loadApiReports(apiUrl, filterLabel) {
+            currentApiReportFilterLabel = filterLabel;
             apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を読み込んでいます。`;
             apiReportList.textContent = '';
+            apiReportPreviousPageButton.disabled = true;
+            apiReportNextPageButton.disabled = true;
 
             try {
                 const response = await fetch(apiUrl, {
@@ -198,6 +208,10 @@
                 const reports = responseData.data;
                 const meta = responseData.meta;
                 apiReportLoadResult.textContent = `APIから${filterLabel}の匿名練習報告を${reports.length}件読み込みました。${meta.current_page}/${meta.last_page}ページ（全${meta.total}件）です。`;
+                apiReportPreviousPageButton.dataset.apiUrl = responseData.links.prev ?? '';
+                apiReportNextPageButton.dataset.apiUrl = responseData.links.next ?? '';
+                apiReportPreviousPageButton.disabled = responseData.links.prev === null;
+                apiReportNextPageButton.disabled = responseData.links.next === null;
 
                 if (reports.length === 0) {
                     const emptyItem = document.createElement('li');
@@ -220,6 +234,14 @@
             button.addEventListener('click', () => {
                 loadApiReports(button.dataset.apiUrl, button.dataset.filterLabel);
             });
+        });
+
+        apiReportPreviousPageButton.addEventListener('click', () => {
+            loadApiReports(apiReportPreviousPageButton.dataset.apiUrl, currentApiReportFilterLabel);
+        });
+
+        apiReportNextPageButton.addEventListener('click', () => {
+            loadApiReports(apiReportNextPageButton.dataset.apiUrl, currentApiReportFilterLabel);
         });
 
         apiSummaryLoadButton.addEventListener('click', async () => {
